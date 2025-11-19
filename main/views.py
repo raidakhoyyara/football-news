@@ -1,5 +1,6 @@
 import json
 from django.shortcuts import render, redirect, get_object_or_404
+import requests
 from main.forms import NewsForm
 from main.models import News
 from django.http import HttpResponse
@@ -216,3 +217,28 @@ def create_news_flutter(request):
         return JsonResponse({"status": "success"}, status=200)
     else:
         return JsonResponse({"status": "error"}, status=401)
+    
+       
+def proxy_image(request):
+    image_url = request.GET.get('url')
+    if not image_url:
+        return HttpResponse('No URL provided', status=400)
+
+    try:
+        # --- BAGIAN PERBAIKAN ---
+        # Kita tambahkan 'headers' agar dikira Browser Chrome beneran
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+        }
+        
+        response = requests.get(image_url, headers=headers, timeout=10)
+        
+        response.raise_for_status()
+       
+        content_type = response.headers.get('Content-Type', 'image/jpeg')
+        return HttpResponse(response.content, content_type=content_type)
+        
+    except Exception as e:
+        print(f"❌ ERROR PROXY: {e}")
+        return HttpResponse(f'Error fetching image: {str(e)}', status=500)
+    
